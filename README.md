@@ -4,7 +4,7 @@ RaceDay is a full-stack web application designed for the South African road runn
 
 ## 👥 User Roles
 - **Organiser:** Create, edit, and delete events, manage categories, view enrolments, and upload results.
-- **Participant:** Browse upcoming events, enrol in categories, view personal enrolments, and track results.
+- **Participant:** Browse upcoming events, enrol in categories, view personal enrolments, and track resuls.
 
 ---
 
