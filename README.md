@@ -8,7 +8,7 @@ RaceDay is a full-stack web application designed for the South African road runn
 
 ---
 
-## 📚 Part 1: System Planning & Database
+##  Part 1: System Planning & Database
 - Designed the relational database using an Entity Relationship Diagram (ERD) with 7 entities.
 - Created the full SQL script matching the ERD with constraints and sample data.
 - Planned the RESTful API endpoints for all required functionality.
