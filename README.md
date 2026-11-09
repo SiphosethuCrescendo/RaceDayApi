@@ -29,4 +29,6 @@ RaceDay is a full-stack web application designed for the South African road runn
 
 - **Custom Authorization:** Implemented a custom `SessionAuthorizeAttribute` to protect MVC routes and redirect unauthenticated users to the login page.
 - **Energetic UI Design:** Utilized Bootstrap 5 to create a modern, sporting aesthetic with custom gradients, card layouts, and responsive grids.
+
+- - **Azure Blob Storage Integration:** Integrated **Azure Blob Storage** (via the Azurite local emulator) into the API. Organisers can upload custom event banner images, which are securely stored in Azure and displayed dynamically on the MVC frontend.
    
