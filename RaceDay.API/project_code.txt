@@ -1,0 +1,730 @@
+
+
+// ==========================================
+// FILE: C:\Users\Student\source\repos\RaceDay.api\Controllers\AuthController.cs
+// ==========================================
+using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Threading.Tasks;
+using RaceDay.Core.DTOs;
+using RaceDay.Core.Interfaces;
+
+namespace RaceDay.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class AuthController : ControllerBase
+    {
+        private readonly IAuthService _authService;
+        public AuthController(IAuthService authService)
+        {
+            _authService = authService;
+        }
+
+        // api/auth/register
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterDto dto)
+        {
+            try
+            {
+                AuthResponseDto Result = await _authService.RegisterAsync(dto);
+                return Ok(Result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // Post: api/auth/login
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginDto dto)
+        {
+            try
+            {
+                AuthResponseDto result = await _authService.LoginAsync(dto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+        }
+    }
+}
+
+
+
+// ==========================================
+// FILE: C:\Users\Student\source\repos\RaceDay.api\Controllers\CategoriesController.cs
+// ==========================================
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using RaceDay.Core.Entities;
+using RaceDay.Infrastructure.Data;
+
+namespace RaceDay.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class CategoriesController : ControllerBase
+    {
+        private readonly RaceDayDbContext _context;
+        public CategoriesController(RaceDayDbContext context) { _context = context; }
+
+        [HttpGet("event/{eventId}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ForEvent(int eventId)
+        {
+            var list = await _context.Categories.Where(c => c.EventID == eventId).ToListAsync();
+            return Ok(list);
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Organiser")]
+        public async Task<IActionResult> Create([FromBody] Category category)
+        {
+            category.CategoryID = 0;
+            _context.Categories.Add(category);
+            await _context.SaveChangesAsync();
+            return Ok(category);
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Organiser")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var c = await _context.Categories.FindAsync(id);
+            if (c == null) return NotFound(new { message = "Category not found" });
+            _context.Categories.Remove(c);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Category deleted" });
+        }
+    }
+}
+
+
+// ==========================================
+// FILE: C:\Users\Student\source\repos\RaceDay.api\Controllers\EnrolmentControler.cs
+// ==========================================
+using System;
+using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using RaceDay.Core.DTOs;
+using RaceDay.Core.Entities;
+using RaceDay.Core.Interfaces;
+
+namespace RaceDay.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize]
+    public class EnrolmentsController : ControllerBase
+    {
+        private readonly IEnrolmentService _enrolmentService;
+
+        public EnrolmentsController(IEnrolmentService enrolmentService)
+        {
+            _enrolmentService = enrolmentService;
+        }
+
+        private int CurrentUserId
+        {
+            get
+            {
+                var idClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (idClaim == null)
+                {
+                    return 0;
+                }
+                return int.Parse(idClaim.Value);
+            }
+        }
+
+        // POST: /api/enrolments  (Participant only)
+        [HttpPost]
+        [Authorize(Roles = "Participant")]
+        public async Task<IActionResult> Enrol([FromBody] CreateEnrolmentDto dto)
+        {
+            try
+            {
+                Enrolment enrolment = await _enrolmentService.EnrolAsync(dto, CurrentUserId);
+                return Ok(enrolment);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // GET: /api/enrolments/my  (Participant only)
+        [HttpGet("my")]
+        [Authorize(Roles = "Participant")]
+        public async Task<IActionResult> MyEnrolments()
+        {
+            List<Enrolment> enrolments = await _enrolmentService
+                .GetParticipantEnrolmentsAsync(CurrentUserId);
+            return Ok(enrolments);
+        }
+
+        // GET: /api/enrolments/event/{eventId}  (Organiser owner only)
+        [HttpGet("event/{eventId}")]
+        [Authorize(Roles = "Organiser")]
+        public async Task<IActionResult> EventEnrolments(int eventId)
+        {
+            try
+            {
+                List<Enrolment> enrolments = await _enrolmentService
+                    .GetEventEnrolmentsAsync(eventId, CurrentUserId);
+                return Ok(enrolments);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(403, new { message = ex.Message });
+            }
+        }
+
+        // PUT: /api/enrolments/{id}/status  (Organiser owner only)
+        [HttpPut("{id}/status")]
+        [Authorize(Roles = "Organiser")]
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] string status)
+        {
+            try
+            {
+                bool updated = await _enrolmentService
+                    .UpdateStatusAsync(id, status, CurrentUserId);
+                if (updated == false)
+                {
+                    return NotFound(new { message = "Enrolment not found" });
+                }
+                return Ok(new { message = "Status updated" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+    }
+}
+
+
+// ==========================================
+// FILE: C:\Users\Student\source\repos\RaceDay.api\Controllers\EventController.cs
+// ==========================================
+using System;
+using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using RaceDay.Core.DTOs;
+using RaceDay.Core.Entities;
+using RaceDay.Core.Interfaces;
+
+namespace RaceDay.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class EventsController : ControllerBase
+    {
+        private readonly IEventService _eventService;
+
+        public EventsController(IEventService eventService)
+        {
+            _eventService = eventService;
+        }
+
+        private int CurrentUserId
+        {
+            get
+            {
+                var idClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (idClaim == null)
+                {
+                    return 0;
+                }
+                return int.Parse(idClaim.Value);
+            }
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAll()
+        {
+            List<Event> events = await _eventService.GetAllAsync();
+            return Ok(events);
+        }
+
+        [HttpGet("{id}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetById(int id)
+        {
+            Event foundEvent = await _eventService.GetByIdAsync(id);
+            if (foundEvent == null)
+            {
+                return NotFound(new { message = "Event not found" });
+            }
+            return Ok(foundEvent);
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Organiser")]
+        public async Task<IActionResult> Create([FromBody] CreateEventDto dto)
+        {
+            try
+            {
+                Event newEvent = await _eventService.CreateAsync(dto, CurrentUserId);
+                return Ok(newEvent);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Organiser")]
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateEventDto dto)
+        {
+            try
+            {
+                Event updated = await _eventService.UpdateAsync(id, dto, CurrentUserId);
+                if (updated == null)
+                {
+                    return NotFound(new { message = "Event not found or you do not own it" });
+                }
+                return Ok(updated);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Organiser")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            bool deleted = await _eventService.DeleteAsync(id, CurrentUserId);
+            if (deleted == false)
+            {
+                return NotFound(new { message = "Event not found or you do not own it" });
+            }
+            return Ok(new { message = "Event deleted" });
+        }
+
+        // NEW ENDPOINT FOR IMAGE UPLOAD
+        [HttpPost("upload-image")]
+        [Authorize(Roles = "Organiser")]
+        public async Task<IActionResult> UploadImage(IFormFile imageFile)
+        {
+            if (imageFile == null || imageFile.Length == 0)
+            {
+                return BadRequest(new { message = "No image file provided" });
+            }
+
+            using var stream = imageFile.OpenReadStream();
+            string imageUrl = await _eventService.UploadImageAsync(stream, imageFile.FileName);
+
+            return Ok(new { url = imageUrl });
+        }
+    }
+}
+
+
+// ==========================================
+// FILE: C:\Users\Student\source\repos\RaceDay.api\Controllers\ResultController.cs
+// ==========================================
+using System;
+using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using RaceDay.Core.DTOs;
+using RaceDay.Core.Entities;
+using RaceDay.Infrastructure.Data;
+
+namespace RaceDay.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize]
+    public class ResultsController : ControllerBase
+    {
+        private readonly RaceDayDbContext _context;
+
+        public ResultsController(RaceDayDbContext context)
+        {
+            _context = context;
+        }
+
+        private int CurrentUserId
+        {
+            get
+            {
+                var idClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (idClaim == null)
+                {
+                    return 0;
+                }
+                return int.Parse(idClaim.Value);
+            }
+        }
+
+        // POST: /api/results  (Organiser owner only)
+        [HttpPost]
+        [Authorize(Roles = "Organiser")]
+        public async Task<IActionResult> Upload([FromBody] CreateResultDto dto)
+        {
+            // Find the enrolment
+            Enrolment enrolment = await _context.Enrolments
+                .Include(e => e.Category)
+                    .ThenInclude(c => c.Event)
+                .FirstOrDefaultAsync(e => e.EnrolmentID == dto.EnrolmentID);
+
+            if (enrolment == null)
+            {
+                return NotFound(new { message = "Enrolment not found" });
+            }
+
+            // Check organiser owns the event
+            if (enrolment.Category.Event.OrganiserID != CurrentUserId)
+            {
+                return Forbid();
+            }
+
+            // Check a result doesn't already exist
+            Result existing = await _context.Results
+                .FirstOrDefaultAsync(r => r.EnrolmentID == dto.EnrolmentID);
+
+            if (existing != null)
+            {
+                return BadRequest(new { message = "A result already exists for this enrolment" });
+            }
+
+            // Create the result
+            Result newResult = new Result();
+            newResult.EnrolmentID = dto.EnrolmentID;
+            newResult.FinishTime = dto.FinishTime;
+            newResult.Position = dto.Position;
+            newResult.GunTime = dto.GunTime;
+            newResult.ChipTime = dto.ChipTime;
+            newResult.Status = "Valid";
+
+            _context.Results.Add(newResult);
+
+            // Mark enrolment as Completed
+            enrolment.Status = "Completed";
+
+            await _context.SaveChangesAsync();
+
+            return Ok(newResult);
+        }
+
+        // GET: /api/results/my  (Participant only)
+        [HttpGet("my")]
+        [Authorize(Roles = "Participant")]
+        public async Task<IActionResult> MyResults()
+        {
+            List<Result> results = await _context.Results
+                .Include(r => r.Enrolment)
+                    .ThenInclude(e => e.Category)
+                        .ThenInclude(c => c.Event)
+                .Where(r => r.Enrolment.ParticipantID == CurrentUserId)
+                .ToListAsync();
+
+            return Ok(results);
+        }
+
+        // GET: /api/results/event/{eventId}  (public)
+        [HttpGet("event/{eventId}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> EventResults(int eventId)
+        {
+            List<Result> results = await _context.Results
+                .Include(r => r.Enrolment)
+                    .ThenInclude(e => e.Category)
+                .Where(r => r.Enrolment.Category.EventID == eventId)
+                .ToListAsync();
+
+            return Ok(results);
+        }
+    }
+}
+
+
+// ==========================================
+// FILE: C:\Users\Student\source\repos\RaceDay.api\Controllers\UserController.cs
+// ==========================================
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using RaceDay.Core.DTOs;
+using RaceDay.Core.Entities;
+using RaceDay.Infrastructure.Data;
+using System;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using static RaceDay.Core.DTOs.UserDtos;
+
+namespace RaceDay.API.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize]
+    public class UsersController : ControllerBase
+    {
+        private readonly RaceDayDbContext _context;
+
+        public UsersController(RaceDayDbContext context)
+        {
+            _context = context;
+        }
+
+        private int CurrentUserId
+        {
+            get
+            {
+                var idClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (idClaim == null)
+                {
+                    return 0;
+                }
+                return int.Parse(idClaim.Value);
+            }
+        }
+
+        // GET: /api/users/profile
+        [HttpGet("profile")]
+        public async Task<IActionResult> GetProfile()
+        {
+            User user = await _context.Users
+                .FirstOrDefaultAsync(u => u.UserID == CurrentUserId);
+
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            UserDto dto = new UserDto();
+            dto.UserID = user.UserID;
+            dto.Email = user.Email;
+            dto.FullName = user.FullName;
+            dto.PhoneNumber = user.PhoneNumber;
+            dto.Role = user.Role;
+
+            return Ok(dto);
+        }
+
+        // PUT: /api/users/profile
+        [HttpPut("profile")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto dto)
+        {
+            User user = await _context.Users
+                .FirstOrDefaultAsync(u => u.UserID == CurrentUserId);
+
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            user.FullName = dto.FullName;
+            user.PhoneNumber = dto.PhoneNumber;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Profile updated" });
+        }
+    }
+}
+
+
+// ==========================================
+// FILE: C:\Users\Student\source\repos\RaceDay.api\Properties\launchSettings.json
+// ==========================================
+{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:5445",
+      "sslPort": 44308
+    }
+  },
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "http://localhost:5253",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "https": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "https://localhost:7044;http://localhost:5253",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
+
+
+
+// ==========================================
+// FILE: C:\Users\Student\source\repos\RaceDay.api\appsettings.Development.json
+// ==========================================
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}
+
+
+
+// ==========================================
+// FILE: C:\Users\Student\source\repos\RaceDay.api\appsettings.json
+// ==========================================
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=(localdb)\\MSSQLLocalDB;Database=RaceDayDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
+  },
+  "Jwt": {
+    "Key": "RaceDaySuperSecretKey2026ForAssignmentUseOnly!",
+    "Issuer": "RaceDayAPI",
+    "Audience": "RaceDayClients"
+  }
+}
+
+
+// ==========================================
+// FILE: C:\Users\Student\source\repos\RaceDay.api\Program.cs
+// ==========================================
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using RaceDay.Core.Interfaces;
+using RaceDay.Infrastructure.Data;
+using RaceDay.Infrastructure.Services;
+using System.Text;
+using System.Text.Json.Serialization;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// 1. Database Connection
+builder.Services.AddDbContext<RaceDayDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// 2. Register Services
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IEventService, EventService>();
+builder.Services.AddScoped<IEnrolmentService, EnrolmentService>();
+
+builder.Services.AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
+
+// 3. JWT Authentication
+string jwtKey = builder.Configuration["Jwt:Key"] ?? "";
+string jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "";
+string jwtAudience = builder.Configuration["Jwt:Audience"] ?? "";
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+// 4. Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "RaceDay API", Version = "v1" });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Paste the JWT token here."
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
+            new string[] { }
+        }
+    });
+});
+
+var app = builder.Build();
+
+// 5. HTTP Pipeline
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    scope.ServiceProvider.GetRequiredService<RaceDayDbContext>().Database.Migrate();
+}
+
+app.Run();
+
+public partial class Program { }
