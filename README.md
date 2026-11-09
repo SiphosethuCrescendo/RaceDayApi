@@ -32,3 +32,8 @@ RaceDay is a full-stack web application designed for the South African road runn
 
 - - **Azure Blob Storage Integration:** Integrated **Azure Blob Storage** (via the Azurite local emulator) into the API. Organisers can upload custom event banner images, which are securely stored in Azure and displayed dynamically on the MVC frontend.
    
+## 🚀 Setup Instructions
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/[your-username]/[RaceDay].git
