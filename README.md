@@ -27,10 +27,6 @@ RaceDay is a full-stack web application designed for the South African road runn
 - Used **Bootstrap 5** to create an energetic, sporting visual theme.
 - Integrated **Azure Blob Storage** (Azurite emulator) to allow Organisers to upload event banner images.
 
----
-
-## 🚀 Setup Instructions
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/[your-username]/[your-repo-name].git
+- **Custom Authorization:** Implemented a custom `SessionAuthorizeAttribute` to protect MVC routes and redirect unauthenticated users to the login page.
+- **Energetic UI Design:** Utilized Bootstrap 5 to create a modern, sporting aesthetic with custom gradients, card layouts, and responsive grids.
+   
