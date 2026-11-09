@@ -13,14 +13,14 @@ RaceDay is a full-stack web application designed for the South African road runn
 - Created the full SQL script matching the ERD with constraints and sample data.
 - Planned the RESTful API endpoints for all required functionality.
 
-## ⚙️ Part 2: RESTful API Development
+##  Part 2: RESTful API Development
 - Built an **ASP.NET Core Web API** connected to SQL Server using **Entity Framework Core (Code-First)**.
 - Implemented **JWT Authentication** with role-based access control (Organiser vs. Participant).
 - Passwords are securely hashed using **BCrypt**.
 - Integrated **Swagger UI** for live endpoint testing.
 - Wrote **27 xUnit Unit Tests** covering authentication, event management, and enrolment logic.
 
-## 🖥️ Part 3: MVC Application & UI
+##  Part 3: MVC Application & UI
 - Built an **ASP.NET Core MVC** frontend that consumes the Part 2 API (no direct database access).
 - Implemented session-based authentication to maintain user state across pages.
 - Created distinct, role-based interfaces and navigation (Organiser Dashboard vs. Participant Portal).
@@ -32,7 +32,7 @@ RaceDay is a full-stack web application designed for the South African road runn
 
 - - **Azure Blob Storage Integration:** Integrated **Azure Blob Storage** (via the Azurite local emulator) into the API. Organisers can upload custom event banner images, which are securely stored in Azure and displayed dynamically on the MVC frontend.
    
-## 🚀 Setup Instructions
+##  Setup Instructions
 
 1. **Clone the repository:**
    ```bash
