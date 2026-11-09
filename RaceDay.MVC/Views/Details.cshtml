@@ -1,0 +1,52 @@
+﻿@model EventModel
+@{
+    ViewData["Title"] = Model.EventName; var role = Context.Session.GetString("UserRole");
+}
+<div class="card">
+    <partial name="_Banner" model="Model.ImageUrl" />
+    <div class="card-body">
+        <h1>@Model.EventName</h1>
+        <p>@Model.Description</p>
+        <p><b>Date:</b> @Model.EventDate.ToString("f") | <b>Location:</b> @Model.Location | <b>Distance:</b> @Model.Distance km | <b>Type:</b> @Model.EventType</p>
+
+        <h4>Categories</h4>
+        @if (!Model.Categories.Any())
+        {
+            <p class="text-muted">No categories yet.</p>
+        }
+        else
+        {
+
+            <ul>@foreach (var c in Model.Categories) {
+            <li>@c.CategoryName</li>
+        }
+</ul>
+                }
+
+        @if (role == "Participant" && Model.Categories.Any())
+        {
+            <h4 class="mt-4">Enrol</h4>
+            <form asp-action="Enrol" method="post" class="row g-2">
+                <input type="hidden" name="eventId" value="@Model.EventID" />
+                <div class="col-md-4">
+                    <select name="categoryId" class="form-select" required>
+                        <option value="">Select category</option>
+                        @foreach (var c in Model.Categories)
+                        {
+                            <option value="@c.CategoryID">@c.CategoryName</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2"><select name="tShirtSize" class="form-select"><option>S</option><option>M</option><option>L</option><option>XL</option></select></div>
+                <div class="col-md-3"><input name="emergencyContactName" class="form-control" placeholder="Emergency contact" required /></div>
+                <div class="col-md-3"><input name="emergencyContactNumber" class="form-control" placeholder="Contact number" required /></div>
+                <div class="col-md-9"><input name="medicalConditions" class="form-control" placeholder="Medical conditions (optional)" /></div>
+                <div class="col-md-3"><button class="btn btn-primary w-100">Enrol</button></div>
+            </form>
+        }
+        else if (role == null)
+        {
+            <a asp-controller="Account" asp-action="Login" class="btn btn-primary">Log in to enrol</a>
+        }
+    </div>
+</div>

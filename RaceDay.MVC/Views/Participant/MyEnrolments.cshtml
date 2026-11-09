@@ -1,0 +1,23 @@
+﻿@model List<EnrolmentModel>
+@{
+    ViewData["Title"] = "My Enrolments";
+}
+<h1>My Enrolments</h1>
+<table class="table bg-white">
+    <thead><tr><th>Event</th><th>Date</th><th>Category</th><th>Status</th></tr></thead>
+    <tbody>
+        @foreach (var e in Model)
+        {
+            <tr>
+                <td>@e.Category?.Event?.EventName</td>
+                <td>@e.Category?.Event?.EventDate.ToString("dd MMM yyyy")</td>
+                <td>@e.Category?.CategoryName</td>
+                <td><partial name="_StatusBadge" model="e.Status" /></td>
+            </tr>
+        }
+    </tbody>
+</table>
+@if (!Model.Any())
+{
+    <p>You haven't enrolled for any events yet. <a asp-controller="Events" asp-action="Index">Browse events</a></p>
+}

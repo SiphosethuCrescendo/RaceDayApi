@@ -1,0 +1,28 @@
+﻿@model List<DashboardRow>
+@{
+    ViewData["Title"] = "Dashboard";
+    var next = Model.Where(r => r.Event.EventDate >= DateTime.Today).OrderBy(r => r.Event.EventDate).FirstOrDefault();
+}
+<h1>Organiser Dashboard</h1>
+<div class="row mb-4">
+    <div class="col-md-4 mb-2"><div class="card p-3"><h6>My events</h6><h2>@Model.Count</h2></div></div>
+    <div class="col-md-4 mb-2"><div class="card p-3"><h6>Total enrolments</h6><h2>@Model.Sum(r => r.Enrolments)</h2></div></div>
+    <div class="col-md-4 mb-2"><div class="card p-3"><h6>Next event</h6><h5>@(next?.Event.EventDate.ToString("dd MMM yyyy") ?? "None scheduled")</h5></div></div>
+</div>
+<table class="table table-striped bg-white">
+    <thead><tr><th>Event</th><th>Date</th><th>Enrolments</th></tr></thead>
+    <tbody>
+        @foreach (var r in Model.OrderBy(x => x.Event.EventDate))
+        {
+            <tr>
+                <td>@r.Event.EventName</td>
+                <td>@r.Event.EventDate.ToString("dd MMM yyyy")</td>
+                <td>@r.Enrolments</td>
+            </tr>
+        }
+    </tbody>
+</table>
+@if (!Model.Any())
+{
+    <p>You haven't created any events yet. <a asp-action="CreateEvent">Create one</a></p>
+}

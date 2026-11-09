@@ -1,0 +1,54 @@
+﻿@model RaceDay.MVC.ViewModels.RegisterViewModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6">
+        <div class="card p-4 shadow-lg">
+            <h2 class="text-center mb-4">Join RaceDay</h2>
+
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert alert-danger">@ViewBag.Error</div>
+            }
+
+            <form asp-action="Register" method="post">
+                <div class="mb-3">
+                    <label asp-for="FullName" class="form-label fw-bold"></label>
+                    <input asp-for="FullName" class="form-control" placeholder="John Doe" />
+                    <span asp-validation-for="FullName" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label fw-bold"></label>
+                    <input asp-for="Email" class="form-control" placeholder="name@example.com" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="PhoneNumber" class="form-label fw-bold"></label>
+                    <input asp-for="PhoneNumber" class="form-control" placeholder="0821234567" />
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Password" class="form-label fw-bold"></label>
+                    <input asp-for="Password" class="form-control" placeholder="Must be at least 6 characters" />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+                <div class="mb-4">
+                    <label asp-for="Role" class="form-label fw-bold"></label>
+                    <select asp-for="Role" class="form-select">
+                        <option value="Participant">I am a Participant (Runner/Cyclist)</option>
+                        <option value="Organiser">I am an Event Organiser</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success btn-lg w-100 mb-3">Register</button>
+            </form>
+            <div class="text-center">
+                <p class="mb-0">Already have an account? <a asp-action="Login" class="text-decoration-none fw-bold">Login here</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

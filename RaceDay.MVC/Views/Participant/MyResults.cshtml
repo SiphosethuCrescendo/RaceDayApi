@@ -1,0 +1,24 @@
+﻿@model List<ResultRow>
+@{
+    ViewData["Title"] = "My Results";
+}
+<h1>My Results</h1>
+<table class="table bg-white">
+    <thead><tr><th>Event</th><th>Date</th><th>Category</th><th>Finish time</th><th>Position</th></tr></thead>
+    <tbody>
+        @foreach (var r in Model)
+        {
+            <tr>
+                <td>@r.EventName</td>
+                <td>@r.EventDate.ToString("dd MMM yyyy")</td>
+                <td>@r.Category</td>
+                <td>@r.FinishTime</td>
+                <td>@(r.Position.HasValue ? $"{ResultRow.Ordinal(r.Position.Value)} out of {r.TotalFinishers}" : "-")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+@if (!Model.Any())
+{
+    <p>No results yet. They appear here after an organiser publishes them.</p>
+}

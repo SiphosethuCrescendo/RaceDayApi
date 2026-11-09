@@ -1,0 +1,28 @@
+﻿@model List<CategoryModel>
+@{
+    ViewData["Title"] = "Categories";
+}
+<h1>Categories: @ViewBag.EventName</h1>
+<form asp-action="AddCategory" method="post" class="row g-2 mb-3">
+    <input type="hidden" name="eventId" value="@ViewBag.EventId" />
+    <div class="col-md-5"><input name="name" class="form-control" placeholder="e.g. Under 20, 10 km, Masters 40+" required /></div>
+    <div class="col-md-4"><select name="categoryType" class="form-select"><option>Age</option><option>Distance</option></select></div>
+    <div class="col-md-3"><button class="btn btn-primary w-100">Add category</button></div>
+</form>
+<table class="table bg-white">
+    <tbody>
+        @foreach (var c in Model)
+        {
+            <tr>
+                <td>@c.CategoryName</td>
+                <td class="text-end">
+                    <form asp-action="DeleteCategory" method="post">
+                        <input type="hidden" name="id" value="@c.CategoryID" /><input type="hidden" name="eventId" value="@ViewBag.EventId" />
+                        <button class="btn btn-sm btn-danger">Remove</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<a asp-action="Events">← Back to events</a>

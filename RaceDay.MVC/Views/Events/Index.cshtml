@@ -1,0 +1,47 @@
+﻿@model List<RaceDay.MVC.ViewModels.EventModel>
+@{
+    ViewData["Title"] = "Upcoming Events";
+}
+
+<h1 class="mb-4">Upcoming Events</h1>
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger">@ViewBag.Error</div>
+}
+@if (!Model.Any())
+{
+    <div class="alert alert-info">No upcoming events found.</div>
+}
+else
+{
+    <div class="row">
+        @foreach (var ev in Model)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    @if (!string.IsNullOrEmpty(ev.ImageUrl))
+                    {
+                        <img src="@ev.ImageUrl" class="card-img-top" alt="@ev.EventName" style="height: 200px; object-fit: cover;">
+                    }
+                    else
+                    {
+                        <div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;"><span>No Image</span></div>
+                    }
+                    <div class="card-body">
+                        <h5 class="card-title">@ev.EventName</h5>
+                        <p class="card-text text-muted text-truncate">@ev.Description</p>
+                        <ul class="list-unstyled">
+                            <li><strong>📅 Date:</strong> @ev.EventDate.ToString("dd MMM yyyy")</li>
+                            <li><strong>📍 Location:</strong> @ev.Location, @ev.City</li>
+                            <li><strong>🏃 Type:</strong> @ev.EventType (@ev.Distance km)</li>
+                        </ul>
+                    </div>
+                    <div class="card-footer bg-white border-top-0">
+                        <a asp-action="Details" asp-route-id="@ev.EventID" class="btn btn-primary w-100">View Details</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

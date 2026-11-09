@@ -1,0 +1,9 @@
+﻿@model string?
+@if (string.IsNullOrEmpty(Model))
+{
+    <div class="event-banner banner-placeholder"></div>
+}
+else
+{
+    <img class="event-banner" src="@Model" alt="Event banner" />
+}

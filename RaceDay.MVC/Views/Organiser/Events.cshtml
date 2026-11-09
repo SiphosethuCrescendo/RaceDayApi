@@ -1,0 +1,30 @@
+﻿@model List<EventModel>
+@{
+    ViewData["Title"] = "Manage Events";
+}
+<div class="d-flex justify-content-between mb-3">
+    <h1>Manage Events</h1>
+    <a asp-action="CreateEvent" class="btn btn-primary align-self-center">+ New event</a>
+</div>
+<table class="table bg-white">
+    <thead><tr><th>Name</th><th>Date</th><th>Location</th><th></th></tr></thead>
+    <tbody>
+        @foreach (var e in Model)
+        {
+            <tr>
+                <td>@e.EventName</td>
+                <td>@e.EventDate.ToString("dd MMM yyyy")</td>
+                <td>@e.Location</td>
+                <td class="text-end">
+                    <a asp-action="EditEvent" asp-route-id="@e.EventID" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <a asp-action="Categories" asp-route-eventId="@e.EventID" class="btn btn-sm btn-outline-secondary">Categories</a>
+                    <a asp-action="Enrolments" asp-route-eventId="@e.EventID" class="btn btn-sm btn-outline-secondary">Enrolments</a>
+                    <a asp-action="Results" asp-route-eventId="@e.EventID" class="btn btn-sm btn-outline-secondary">Results</a>
+                    <form asp-action="DeleteEvent" method="post" class="d-inline" onsubmit="return confirm('Delete this event?')">
+                        <input type="hidden" name="id" value="@e.EventID" /><button class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
